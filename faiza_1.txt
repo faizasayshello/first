@@ -1,0 +1,181 @@
+TC 1,2,3,4,5,6 - MatchKey_Input_TC1.csv
+# TC 7 - MatchKey_ORC_Compression_None
+# TC 8 - MatchKey_Input_TC8.csv
+# TC 9 - MatchKey_Input_TC9.csv
+# TC 10 - MatchKey_Input_TC10.csv
+# TC 11 - MatchKey_Input_TC11.csv
+# TC 12 - MatchKey_Input_TC12.csv
+# TC 13 - Read From Text File-> Write to ORC File
+# TC 7 - Read From ORC File- > Write to Text File
+# TC 14 - Read From ORC File- > Write to ORC File
+
+projectfolder="/opt/spectrum_automation"
+hdfs_projectfolder="/user/qa/spectrum_automation"
+version=12.2
+jarfile=${projectfolder}/BDQJobExecution/execution_jars/testClient-${version}-jar-with-dependencies.jar
+
+classpath=
+
+
+rm -rf ${projectfolder}/BDQJobExecution/scripts/mr/matchkey/inputconfigcom.pb.bdq.qa.matchkey.mr.sample.BDQ_GAV_US_MR_TC*
+rm -rf ${projectfolder}/BDQJobExecution/scripts/mr/matchkey/engineconfigcom.pb.bdq.qa.matchkey.mr.sample.BDQ_GAV_US_MR_TC*
+rm -rf ${projectfolder}/BDQJobExecution/output/mr/matchkey/BDQ_GAV_MATCHKEY_Output_bymr_TC*
+
+echo "MatchKey - MR Test Client Automation started $(date) " > ${projectfolder}/BDQJobExecution/logs/BDQ_Matchkey_MR_TestClient_Comparison.log
+
+MatchKey=1
+
+rm -rf BDQ_Matchkey_MR_TestClient_Comparison.log
+
+echo "Starting Match Key Generator MR execution $(date)" >> BDQ_Matchkey_MR_TestClient_Comparison.log
+             
+#hadoop fs -put -f "$projectfolder"MatchKey_Input_TC1.csv "$projectfolder"MatchKey_Input_TC1.csv
+#hadoop fs -put -f "$projectfolder"MatchKey_Input_TC8.csv "$projectfolder"MatchKey_Input_TC8.csv
+#hadoop fs -put -f "$projectfolder"MatchKey_Input_TC9.csv "$projectfolder"MatchKey_Input_TC9.csv
+#hadoop fs -put -f "$projectfolder"MatchKey_Input_TC10.csv "$projectfolder"MatchKey_Input_TC10.csv
+#hadoop fs -put -f "$projectfolder"MatchKey_Input_TC11.csv "$projectfolder"MatchKey_Input_TC11.csv
+#hadoop fs -put -f "$projectfolder"MatchKey_Input_TC12.csv "$projectfolder"MatchKey_Input_TC12.csv
+
+check_directory_exists_on_hdfs()
+{
+path=$1
+hadoop fs -test -d $path
+ if [ $? != 0 ]
+            then
+                echo "$path does not exist on hdfs. creating directory structure on hdfs"
+				hadoop fs -mkdir -p $path
+                else
+                    echo "$path already present on hdfs"
+    fi
+
+}
+
+# Function to get input files on hdfs from local directory only in case they dont exists on hdfs
+
+check_file_exists_on_hdfs()
+{
+path=$1
+localpath=$2
+hadoop fs -test -f $path
+	if [ $? != 0 ]
+		then
+			echo "$path does not exist on hdfs. placing file from local on hdfs"
+			hadoop fs -put -f $localpath $path
+    else
+            echo "$path already present on hdfs"
+    fi
+
+}
+# Function to create directory on local path only in case it don't exists
+
+check_directory_exists_on_local()
+{
+path=$1
+test -d $path
+
+	if [ $? != 0 ]
+		then
+			echo "$path does not exist on local. creating output directory structure on local"
+			mkdir -p $path
+    else
+			echo "$path already present on local"
+    fi
+
+}
+
+setup_files_on_hdfs=false
+
+if [ "$setup_files_on_hdfs" = true ] ; then
+    
+echo "checking directory structure exists on hdfs"
+check_directory_exists_on_hdfs ${hdfs_projectfolder}/matchkeyhkey/input
+
+echo "Calling functions to check input files exists on hdfs or not"
+check_file_exists_on_hdfs ${hdfs_projectfolder}/matchkey/input/MatchKey_Input_TC1.csv ${projectfolder}/InputFiles/matchkey/MatchKey_Input_TC1.csv
+check_file_exists_on_hdfs ${hdfs_projectfolder}/matchkey/input/match_baq_input_file2.txt ${projectfolder}/InputFiles/matchkey/matchkey_baq_input_file2.txt
+check_file_exists_on_hdfs ${hdfs_projectfolder}/matchkey/input/matchkey_baq_input_file3.txt ${projectfolder}/InputFiles/matchkey/matchkey_baq_input_file3.txt
+check_file_exists_on_hdfs ${hdfs_projectfolder}/matchkey/input/matchkey_baq_input_file4.txt ${projectfolder}/InputFiles/matchkey/matchkey_baq_input_file4.txt
+check_file_exists_on_hdfs ${hdfs_projectfolder}/matchkey/input/matchkey_baq_input_file5.txt ${projectfolder}/InputFiles/matchkey/matchkey_baq_input_file5.txt
+
+echo "checking output directory exists on local"
+check_directory_exists_on_local ${projectfolder}/BDQJobExecution/output/mr/matchkey
+
+fi
+
+TestCaseToRun=( 2 )
+#TestCaseToRun=( 1 2 3 4 5 6 7 13 14 )
+
+for i in "${TestCaseToRun[@]}"
+do
+
+/opt/hadoop/bin/hadoop fs -rm "$projectfolder"MatchKey_Output_bybdq_TC$i.csv
+rm -rf JSONStringcom.pb.bdq.amm.mr.sample.MRMatchKeyTC$i
+rm -rf MatchKey_Output_bybdq_TC$i.csv
+rm -rf _header
+rm -rf orc_output
+echo "Running test case number "$i
+   
+if [ $i -eq 7 -o $i -eq 14 ]
+then
+echo "inside i -eq 7 -o i -eq 14 with i="$i
+#hadoop fs -put -f "$projectfolder"MatchKey_ORC_Compression_None "$projectfolder"MatchKey_ORC_Compression_None
+hadoop jar $jarfile ${classpath}${i} $MatchKey ${hdfs_projectfolder}/matchkey/input/MatchKey_ORC_Compression_None ${hdfs_projectfolder}/matchkey/mr_output
+
+elif [ $i -eq 8 ]
+then
+echo "inside [ i -eq 8 ] with i="$i
+hadoop jar $jarfile ${classpath}${i} $MatchKey ${hdfs_projectfolder}/matchkey/input/MatchKey_Input_TC8.csv ${hdfs_projectfolder}/matchkey/mr_output
+
+
+elif [ $i -eq 9 ]
+then
+echo "inside [ i -eq 9 ] with i="$i
+hadoop jar $jarfile ${classpath}${i}  $MatchKey  ${hdfs_projectfolder}/matchkey/input/MatchKey_Input_TC9.csv ${hdfs_projectfolder}/matchkey/mr_output
+elif [ $i -eq 10 ]
+then
+echo "inside [ i -eq 10 ] with i="$i
+hadoop jar $jarfile ${classpath}${i} $MatchKey  ${hdfs_projectfolder}/matchkey/input/MatchKey_Input_TC10.csv ${hdfs_projectfolder}/matchkey/mr_output
+
+elif [ $i -eq 11 ]
+then
+echo "inside [ i -eq 11 ] with i="$i
+hadoop jar $jarfile ${classpath}${i} $MatchKey  ${hdfs_projectfolder}/matchkey/input/MatchKey_Input_TC11.csv ${hdfs_projectfolder}/matchkey/mr_output
+
+elif [ $i -eq 12 ]
+then
+echo "inside [ i -eq 12 ] with i="$i
+hadoop jar $jarfile ${classpath}${i} $MatchKey  ${hdfs_projectfolder}/matchkey/input/MatchKey_Input_TC12.csv ${hdfs_projectfolder}/matchkey/mr_output
+
+
+else
+
+#/opt/hadoop/bin/hadoop jar $jarfile com.pb.bdq.amm.mr.sample.MRMatchKeyTC$i $MatchKey "$projectfolder"MatchKey_Input_TC1.csv "$projectfolder"output
+#/opt/hadoop/bin/hadoop jar /home/hadoop/spectrum_automation/BDQJobExecution/execution_jars/testClient-12.1-jar-with-dependencies.jar com.pb.bdq.amm.mr.sample.MRMatchKeyTC1 1 "$projectfolder"MatchKey_Input_TC10.csv "$projectfolder"output true /home/hadoop/spectrum_automation/BDQJobExecution/PBSpectrum_BigDataSDK/SDK/samples/configuration/mr/ /home/hadoop/spectrum_automation/BDQJobExecution/scripts/configxml/matchkey
+
+#java -cp $jarfile com.pb.bdq.amm.configxml.sample.CreateMatchKeyConfig $i "$projectfolder"MatchKey_Input_TC1.csv "$projectfolder"output
+
+fi
+
+if [ $i -eq 13 ] || [ $i -eq 14 ]
+then
+echo "inside output file download logic for ORC files with i="$i
+java -cp ORCReader.jar com.pb.spectrum.qa.reader.Reader $hdfspath "$projectfolder"output/part-m-00000 $projectfolder ,
+mv "$projectfolder"orc_output "$projectfolder"MatchKey_Output_bybdq_TC$i.csv
+rm -rf _header
+
+else 
+echo "inside output file download logic for text files with i="$i
+hadoop fs -get ${hdfs_projectfolder}/matchkey/mr_output/part-* ${projectfolder}/BDQJobExecution/output/mr/matchkey/BDQ_GAV_MatchKey_Output_bymr_TC$i.txt
+fi
+
+
+if [ $i -eq 7 ] || [ $i -eq 13 ] || [ $i -eq 14 ]
+then
+echo "inside [ i -eq 7 ] || [ i -eq 13 ] || [ i -eq 14 ] File Compare Logic with i="$i
+java -jar ${projectfolder}/BDQJobExecution/comparison_jars/MatchKeyFileComparator.jar ${projectfolder} /SpectrumJobExecution/output/matchkey/MatchKey_Output_TC6.csv BDQJobExecution/output/mr/matchkey/BDQ_GAV_MatchKey_Output_bymr_TC$i.txt >> ${projectfolder}/BDQJobExecution/logs/BDQ_Matchkey_MR_TestClient_Comparison.log
+else
+echo "inside else File Compare Logic with i="$i
+java -jar MatchKeyFileComparator.jar "$projectfolder" MatchKey_Output_TC$i.csv MatchKey_Output_bybdq_TC$i.csv >> ${projectfolder}/BDQJobExecution/logs/BDQ_Matchkey_MR_TestClient_Comparison.log
+fi
+
+done
